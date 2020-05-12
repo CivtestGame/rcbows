@@ -205,10 +205,11 @@ function rcbows.register_arrow(name, def)
 						end
 
 						--replace node
-						if def.effects.replace_node then
-							minetest.set_node(pos, {name = def.effects.replace_node})
+						if def.effects.replace_node
+							and minetest.get_node(thing.above).name == "air" then
+								minetest.set_node(thing.above, {name = def.effects.replace_node})
 						end
-
+						
 						rcbows.boom_effect(def, pos) -- BOOM
 						rcbows.water_effect(def, pos) -- water - extinguish fires
 
