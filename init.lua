@@ -227,6 +227,7 @@ function rcbows.register_arrow(name, def)
 	minetest.register_craftitem(def.inventory_arrow.name, {
 		description = def.inventory_arrow.description,
 		inventory_image = def.inventory_arrow.inventory_image,
+		stack_max = def.stack_max or 99,
 	})
 end
 
