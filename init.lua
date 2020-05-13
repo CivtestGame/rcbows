@@ -147,7 +147,7 @@ function rcbows.register_arrow(name, def)
 					if not thing.ref:is_player() or thing.ref:get_player_name() ~= self.shooter_name then
 						thing.ref:punch(self.object, 1.0, {
 							full_punch_interval = 0.5,
-							damage_groups = {fleshy = def.damage}
+							damage_groups = {fleshy = def.damage, pierce = def.pierce or 0, slash = def.slash or 0, bludgeon = def.bludgeon or 0}
 						})
 						self.waiting_for_removal = true
 						self.object:remove()
@@ -292,8 +292,8 @@ function rcbows.trail(old_pos, pos, trail_particle)
         --maxacc = {x=1, y=0, z=1},
         minexptime = 0.2,
         maxexptime = 0.5,
-        minsize = 0.5,
-        maxsize = 1.5,
+        minsize = 0.1,
+        maxsize = 1.0,
         collisiondetection = false,
         vertical = false,
         glow = 14
