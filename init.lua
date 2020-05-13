@@ -251,7 +251,7 @@ function rcbows.boom_effect(def, pos)
 		local mod_name = def.effects.explosion.mod
 		if minetest.get_modpath(mod_name) ~= nil then
 			if mod_name == "tnt" then
-				tnt.boom(pos, {radius = def.effects.explosion.radius, damage_radius = def.effects.explosion.damage})
+				tnt.boom(pos, {radius = def.effects.explosion.radius, damage_radius = def.effects.explosion.damage, entity_damage = def.effects.explosion.entity_damage})
 			elseif mod_name == "explosions" then
 				explosions.explode(pos, {radius = def.effects.explosion.radius, strength = def.effects.explosion.damage})
 			end
