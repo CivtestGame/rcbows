@@ -298,7 +298,8 @@ function rcbows.trail(old_pos, pos, trail_particle)
         maxsize = 1.0,
         collisiondetection = false,
         vertical = false,
-        glow = 14
+        glow = 14,
+		animation = {type = "vertical_frames", aspect_w = 3, aspect_h = 3, length = 0.5}
     })
 end
 
