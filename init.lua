@@ -195,14 +195,14 @@ function rcbows.register_arrow(name, def)
 						self.object:set_acceleration({x = 0, y = -9.81, z = 0})
 					end
 					if minetest.registered_items[name].walkable then
-						if not(no_drop) then
+						if not(def.no_drop) then
 							minetest.item_drop(ItemStack(def.drop or def.inventory_arrow), nil, vector.round(self.old_pos))
 						end
 						self.waiting_for_removal = true
 						self.object:remove()
 
 						-- no effects or not owner, nothing to do.
-						if not def.effects or minetest.is_protected(pos, self.shooter_name) then
+						if not def.effects then
 							return
 						end
 
@@ -211,7 +211,7 @@ function rcbows.register_arrow(name, def)
 							and minetest.get_node(thing.above).name == "air" then
 								minetest.set_node(thing.above, {name = def.effects.replace_node})
 						end
-						
+
 						rcbows.boom_effect(def, pos) -- BOOM
 						rcbows.water_effect(def, pos) -- water - extinguish fires
 
@@ -253,7 +253,7 @@ function rcbows.boom_effect(def, pos)
 		local mod_name = def.effects.explosion.mod
 		if minetest.get_modpath(mod_name) ~= nil then
 			if mod_name == "tnt" then
-				tnt.boom(pos, {radius = def.effects.explosion.radius, damage_radius = def.effects.explosion.damage, entity_damage = def.effects.explosion.entity_damage})
+				tnt.boom(pos, {radius = def.effects.explosion.radius, damage_radius = def.effects.explosion.damage, entity_damage = def.effects.explosion.entity_damage, explode_center = true})
 			elseif mod_name == "explosions" then
 				explosions.explode(pos, {radius = def.effects.explosion.radius, strength = def.effects.explosion.damage})
 			end
