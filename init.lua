@@ -139,7 +139,9 @@ function rcbows.register_arrow(name, def)
 			end
 			local pos = self.object:get_pos()
 			self.old_pos = self.old_pos or pos
+			local drag_factor = def.drag_factor or 0.995 -- EVEN DRAG FACTORS OF 0.95 ARE VERY NOTICEABLE- KEEP THIS NUMBER CLOSE TO AND BELOW 1
 			local velocity = self.object:get_velocity()
+			self.object:set_velocity(vector.multiply(velocity, drag_factor))
 			local cast = minetest.raycast(self.old_pos, pos, true, true)
 			local thing = cast:next()
 			while thing do
