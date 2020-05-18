@@ -44,7 +44,6 @@ function rcbows.get_charge(player)
 		player_meta = player:get_meta()
 		charge_end = player_meta:get_int("charge_end")
 	end
-	minetest.chat_send_all(charge_end.." "..current_time)
 	if current_time > charge_end then
 		if player:is_player() then
 			player_meta:set_int("charge_end", 0)

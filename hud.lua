@@ -27,7 +27,6 @@ function rcbows.update_hud(player)
 		return
 	end
 	local percent = 1 - (charge / charge_time)
-	minetest.chat_send_all("Bow is "..percent.." charged!")
 	if not bar_idx then
 		local new_bar_idx = player:hud_add({
             hud_elem_type = "image",
