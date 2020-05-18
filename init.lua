@@ -28,6 +28,12 @@ function rcbows.spawn_arrow(user, strength, itemstack)
 	return true
 end
 
+local function set_charging(user, item, meta)
+	meta:set_string("rcbows:is_charging", "true") --set tool in 'charging' state
+	user:set_wielded_item(item)
+	return itemstack
+end
+
 function rcbows.register_bow(name, def)
 	assert(type(def.description) == "string")
 	assert(type(def.image) == "string")
@@ -56,9 +62,8 @@ function rcbows.register_bow(name, def)
 		local wielded_item_name = wielded_item:get_name()
 		local wielded_meta = wielded_item:get_meta()
 		if wielded_item_name == name and wielded_meta:get_string("rcbows:is_charging") ~= "true" then
-			wielded_meta:set_string("rcbows:is_charging", "true") --set tool in 'charging' state
-			user:set_wielded_item(wielded_item)
 			if inv:contains_item("main", inventory_arrow) then
+				set_charging(user, wielded_item, wielded_meta)
 				if def.sounds then
 					local user_pos = user:get_pos()
 					if not def.sounds.soundfile_draw_bow then
@@ -75,18 +80,20 @@ function rcbows.register_bow(name, def)
 						current_item:set_name(name .. "_charged")
 						current_meta:set_string("rcbows:is_charging", "false")
 						user:set_wielded_item(current_item)
+						return itemstack
 					end
 				end, user, name)
 			end
-			return itemstack
 		end
 		if wielded_item_name == name and wielded_meta:get_string("rcbows:is_charging") == "true" then
 			minetest.after(def.charge_time, function(user, name)
-				wielded_meta:set_string("rcbows:is_charging", "false")
-				user:set_wielded_item(wielded_item)
+				if wielded_item_name == name and wielded_meta:get_string("rcbows:is_charging") == "true" then
+					wielded_meta:set_string("rcbows:is_charging", "false")
+					user:set_wielded_item(wielded_item)
+					return itemstack
+				end
 			end, user, name)
 		end
-		return itemstack
 	end
 
 	minetest.register_tool(name, {
