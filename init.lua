@@ -1,10 +1,15 @@
 rcbows = {}
 
 local S = minetest.get_translator(minetest.get_current_modname())
+rcbows.path = minetest.get_modpath("rcbows")
+dofile(rcbows.path .. "/hud.lua")
 
 --CONSTANTS
 local DEFAULT_MAX_HEAR_DISTANCE = 10
 local DEFAULT_GAIN = 0.5
+
+local current_time = 0
+local storage = minetest.get_mod_storage()
 
 function rcbows.spawn_arrow(user, strength, itemstack)
 	local pos = user:get_pos()
@@ -28,9 +33,53 @@ function rcbows.spawn_arrow(user, strength, itemstack)
 	return true
 end
 
-local function set_charging(user, item, meta)
+function rcbows.get_charge(player)
+	if not player then
+		return nil
+	end
+	local charge_end = 0
+	local player_meta = nil
+
+	if player:is_player() then
+		player_meta = player:get_meta()
+		charge_end = player_meta:get_int("charge_end")
+	end
+	minetest.chat_send_all(charge_end.." "..current_time)
+	if current_time > charge_end then
+		if player:is_player() then
+			player_meta:set_int("charge_end", 0)
+		end
+		return nil
+	else
+		return charge_end - current_time
+	end
+end
+
+function rcbows.get_charge_max(player)
+	if not player then
+		return nil
+	end
+	local player_meta = nil
+	if player:is_player() then
+		player_meta = player:get_meta()
+		charge_max = player_meta:get_int("charge_max")
+		return charge_max
+	end
+end
+
+local function set_charging(user, item, meta, charge_time)
 	meta:set_string("rcbows:is_charging", "true") --set tool in 'charging' state
 	user:set_wielded_item(item)
+	local player_meta = user:get_meta()
+	player_meta:set_int(
+		"charge_end",
+		math.floor(current_time + charge_time)
+	)
+	player_meta:set_int(
+		"charge_max",
+		charge_time
+	)
+	rcbows.update_hud(user, charge_time)
 	return itemstack
 end
 
@@ -40,7 +89,7 @@ function rcbows.register_bow(name, def)
 	assert(type(def.strength) == "number")
 	assert(def.uses > 0)
 
-	local function reload_bow(itemstack, user)
+	local function reload_bow(itemstack, user) -- called on every right click
 		local inv = user:get_inventory()
 		local arrow, inventory_arrow
 		if type(def.arrows) == 'table' then --more than one arrow?
@@ -63,7 +112,7 @@ function rcbows.register_bow(name, def)
 		local wielded_meta = wielded_item:get_meta()
 		if wielded_item_name == name and wielded_meta:get_string("rcbows:is_charging") ~= "true" then
 			if inv:contains_item("main", inventory_arrow) then
-				set_charging(user, wielded_item, wielded_meta)
+				set_charging(user, wielded_item, wielded_meta, def.charge_time)
 				if def.sounds then
 					local user_pos = user:get_pos()
 					if not def.sounds.soundfile_draw_bow then
@@ -345,3 +394,15 @@ function rcbows.splash(old_pos, splash_particle)
 		playername = "singleplayer"
 	})
 end
+
+-- timer for charging hud
+local timer = 0
+minetest.register_globalstep(function(dtime)
+    timer = timer + dtime
+    if timer < 1.0 then
+        return
+    end
+    timer = 0
+
+    current_time = os.time(os.date("!*t"))
+end)
