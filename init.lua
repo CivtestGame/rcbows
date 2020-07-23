@@ -11,6 +11,9 @@ local DEFAULT_GAIN = 0.5
 local current_time = 0
 local storage = minetest.get_mod_storage()
 
+local registered_items = {}
+local registered_charged_items = {}
+
 function rcbows.spawn_arrow(user, strength, itemstack)
 	local pos = user:get_pos()
 	pos.y = pos.y + 1.5 -- camera offset
@@ -202,6 +205,9 @@ function rcbows.register_bow(name, def)
 			return itemstack
 		end,
 	})
+
+        registered_items[name] = true
+        registered_charged_items[name .. "_charged"] = true
 end
 
 function rcbows.register_arrow(name, def)
@@ -419,10 +425,39 @@ end
 local timer = 0
 minetest.register_globalstep(function(dtime)
     timer = timer + dtime
-    if timer < 1.0 then
+    if timer < 0.5 then
         return
     end
     timer = 0
 
     current_time = os.time(os.date("!*t"))
+end)
+
+-- Stop charged weapons from being moved from the hotbar
+minetest.register_allow_player_inventory_action(function(player, action,
+                                                         inventory,
+                                                         inventory_info)
+      local stack
+
+      if action == "move" then
+         local from_list = inventory_info.from_list
+         local from_idx =  inventory_info.from_index
+         stack = inventory:get_stack(from_list, from_idx)
+      else
+         -- for "put" and "take" actions
+         stack = inventory_info.stack
+      end
+
+      if not stack or stack:is_empty() then
+         return 0
+      end
+
+      local stack_name = stack:get_name()
+      if registered_charged_items[stack_name] then
+         local pname = player:get_player_name()
+         minetest.chat_send_player(pname, "You can't move a charged weapon!")
+         return 0
+      end
+
+      return stack:get_count()
 end)
