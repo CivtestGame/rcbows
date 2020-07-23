@@ -51,9 +51,6 @@ function rcbows.get_charge(player)
 		charge_end = player_meta:get_int("rcbows:charge_end")
 	end
 	if current_time > charge_end then
-		if player:is_player() then
-			player_meta:set_string("rcbows:charge_end", "")
-		end
 		return nil
 	else
 		return charge_end - current_time
@@ -169,29 +166,58 @@ function rcbows.register_bow(name, def)
 		})
 	end
 
+        local function charged_on_rightclick(itemstack, user)
+           local imeta = itemstack:get_meta()
+           local arrow = imeta:get_string("rcbows:charged_arrow")
+           imeta:set_string("rcbows:charged_arrow", "")
+
+           local umeta = user:get_meta()
+           umeta:set_string("rcbows:charge_end", "")
+
+           itemstack:set_name(name)
+           player_api.give_item(user, arrow)
+
+           minetest.chat_send_player(
+              user:get_player_name(), "Unloaded wielded weapon."
+           )
+
+           return itemstack
+        end
+
 	minetest.register_tool(name .. "_charged", {
 		description = def.description .. " " .. S("(use to fire)"),
 		inventory_image = def.base_texture .. "^" ..def.overlay_charged,
 		groups = {not_in_creative_inventory=1},
 
-                on_drop = function(itemstack, dropper, pos)
-                   local imeta = itemstack:get_meta()
-                   imeta:set_string("rcbows:charged_arrow", "")
-                   itemstack:set_name(name)
+                -- -- Unneeded
+                -- on_drop = function(itemstack, dropper, pos)
+                --    local imeta = itemstack:get_meta()
+                --    imeta:set_string("rcbows:charged_arrow", "")
+                --    itemstack:set_name(name)
 
-                   local dmeta = dropper:get_meta()
-                   dmeta:set_string("rcbows:charge_end", "")
+                --    local dmeta = dropper:get_meta()
+                --    dmeta:set_string("rcbows:charge_end", "")
 
-                   return minetest.item_drop(itemstack, dropper, pos)
-                end,
+                --    return minetest.item_drop(itemstack, dropper, pos)
+                -- end,
+
+                on_place = charged_on_rightclick,
+                on_secondary_use = charged_on_rightclick,
 
 		on_use = function(itemstack, user, pointed_thing)
 
                         local player_meta = user:get_meta()
+
+                        if not player_meta:contains("rcbows:charge_end") then
+                           itemstack:set_name(name)
+                           return itemstack
+                        end
+
                         player_meta:set_string("rcbows:charge_end", "") -- clear the int
 
 			if not rcbows.spawn_arrow(user, def.strength, itemstack) then
-				return -- something failed
+                           itemstack:set_name(name)
+                           return itemstack
 			end
 			if def.sounds then
 				local user_pos = user:get_pos()
@@ -460,4 +486,9 @@ minetest.register_allow_player_inventory_action(function(player, action,
       end
 
       return stack:get_count()
+end)
+
+minetest.register_on_dieplayer(function(player, reason)
+      local meta = player:get_meta()
+      meta:set_string("rcbows:charge_end", "")
 end)
