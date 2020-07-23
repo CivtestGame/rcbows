@@ -11,8 +11,9 @@ local DEFAULT_GAIN = 0.5
 local current_time = 0
 local storage = minetest.get_mod_storage()
 
-local registered_items = {}
-local registered_charged_items = {}
+rcbows.registered_arrows = {}
+rcbows.registered_items = {}
+rcbows.registered_charged_items = {}
 
 function rcbows.spawn_arrow(user, strength, itemstack)
 	local pos = user:get_pos()
@@ -146,6 +147,8 @@ function rcbows.register_bow(name, def)
                     current_item:set_name(name .. "_charged")
                     user:set_wielded_item(current_item)
                     return itemstack
+                 else
+                    player_meta:set_string("rcbows:charge_end", "")
                  end
               end, user, name)
         end
@@ -175,7 +178,9 @@ function rcbows.register_bow(name, def)
            umeta:set_string("rcbows:charge_end", "")
 
            itemstack:set_name(name)
-           player_api.give_item(user, arrow)
+
+           local arrow_def = rcbows.registered_arrows[arrow]
+           player_api.give_item(user, arrow_def.inventory_arrow.name)
 
            minetest.chat_send_player(
               user:get_player_name(), "Unloaded wielded weapon."
@@ -232,11 +237,14 @@ function rcbows.register_bow(name, def)
 		end,
 	})
 
-        registered_items[name] = true
-        registered_charged_items[name .. "_charged"] = true
+        rcbows.registered_items[name] = true
+        rcbows.registered_charged_items[name .. "_charged"] = true
 end
 
 function rcbows.register_arrow(name, def)
+	rcbows.registered_arrows[name] = def
+	rcbows.registered_arrows[name].name = name
+
 	minetest.register_entity(name, {
 		hp_max = 4,       -- possible to catch the arrow (pro skills)
 		physical = false, -- use Raycast
