@@ -487,7 +487,7 @@ minetest.register_allow_player_inventory_action(function(player, action,
       end
 
       local stack_name = stack:get_name()
-      if registered_charged_items[stack_name] then
+      if rcbows.registered_charged_items[stack_name] then
          local pname = player:get_player_name()
          minetest.chat_send_player(pname, "You can't move a charged weapon!")
          return 0
