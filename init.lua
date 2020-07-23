@@ -26,6 +26,9 @@ function rcbows.spawn_arrow(user, strength, itemstack)
 		return
 	end
 	local lua_ent = obj:get_luaentity()
+        if not lua_ent then
+           return
+        end
 	lua_ent.shooter_name = user:get_player_name()
 	obj:set_yaw(yaw - 0.5 * math.pi)
 	local velocity = vector.multiply(dir, strength)
@@ -42,11 +45,11 @@ function rcbows.get_charge(player)
 
 	if player:is_player() then
 		player_meta = player:get_meta()
-		charge_end = player_meta:get_int("charge_end")
+		charge_end = player_meta:get_int("rcbows:charge_end")
 	end
 	if current_time > charge_end then
 		if player:is_player() then
-			player_meta:set_int("charge_end", 0)
+			player_meta:set_string("rcbows:charge_end", "")
 		end
 		return nil
 	else
@@ -61,25 +64,9 @@ function rcbows.get_charge_max(player)
 	local player_meta = nil
 	if player:is_player() then
 		player_meta = player:get_meta()
-		charge_max = player_meta:get_int("charge_max")
+		local charge_max = player_meta:get_int("rcbows:charge_max")
 		return charge_max
 	end
-end
-
-local function set_charging(user, item, meta, charge_time)
-	meta:set_string("rcbows:is_charging", "true") --set tool in 'charging' state
-	user:set_wielded_item(item)
-	local player_meta = user:get_meta()
-	player_meta:set_int(
-		"charge_end",
-		math.floor(current_time + charge_time)
-	)
-	player_meta:set_int(
-		"charge_max",
-		charge_time
-	)
-	rcbows.update_hud(user, charge_time)
-	return itemstack
 end
 
 function rcbows.register_bow(name, def)
@@ -88,61 +75,80 @@ function rcbows.register_bow(name, def)
 	assert(type(def.strength) == "number")
 	assert(def.uses > 0)
 
-	local function reload_bow(itemstack, user) -- called on every right click
-		local inv = user:get_inventory()
-		local arrow, inventory_arrow
-		if type(def.arrows) == 'table' then --more than one arrow?
-			for i = 1, #def.arrows do
-				arrow = def.arrows[i]
-				inventory_arrow = minetest.registered_entities[arrow].inventory_arrow_name
-				if inv:contains_item("main", inventory_arrow) then
-					break
-				end
-			end
-		else
-			arrow = def.arrows
-			inventory_arrow = minetest.registered_entities[def.arrows].inventory_arrow_name
-		end
-		if not inventory_arrow then
-			return
-		end
-		local wielded_item = user:get_wielded_item()
-		local wielded_item_name = wielded_item:get_name()
-		local wielded_meta = wielded_item:get_meta()
-		if wielded_item_name == name and wielded_meta:get_string("rcbows:is_charging") ~= "true" then
-			if inv:contains_item("main", inventory_arrow) then
-				set_charging(user, wielded_item, wielded_meta, def.charge_time)
-				if def.sounds then
-					local user_pos = user:get_pos()
-					if not def.sounds.soundfile_draw_bow then
-						def.sounds.soundfile_draw_bow = "rcbows_draw_bow"
-						rcbows.make_sound("pos", user_pos, def.sounds.soundfile_draw_bow, DEFAULT_GAIN, DEFAULT_MAX_HEAR_DISTANCE)
-					end
-				end
-				minetest.after(def.charge_time, function(user, name)
-					local current_item = user:get_wielded_item()
-					local current_meta = current_item:get_meta()
-					if current_item:get_name() == name then
-						inv:remove_item("main", inventory_arrow)
-						current_meta:set_string("rcbows:charged_arrow", arrow) --save the arrow in the meta
-						current_item:set_name(name .. "_charged")
-						current_meta:set_string("rcbows:is_charging", "false")
-						user:set_wielded_item(current_item)
-						return itemstack
-					end
-				end, user, name)
-			end
-		end
-		if wielded_item_name == name and wielded_meta:get_string("rcbows:is_charging") == "true" then
-			minetest.after(def.charge_time, function(user, name)
-				if wielded_item_name == name and wielded_meta:get_string("rcbows:is_charging") == "true" then
-					wielded_meta:set_string("rcbows:is_charging", "false")
-					user:set_wielded_item(wielded_item)
-					return itemstack
-				end
-			end, user, name)
-		end
-	end
+        local function reload_bow(itemstack, user) -- called on every right click
+           local inv = user:get_inventory()
+           local arrow, inventory_arrow
+           if type(def.arrows) == 'table' then --more than one arrow?
+              for i = 1, #def.arrows do
+                 arrow = def.arrows[i]
+                 inventory_arrow = minetest.registered_entities[arrow].inventory_arrow_name
+                 if inv:contains_item("main", inventory_arrow) then
+                    break
+                 end
+              end
+           else
+              arrow = def.arrows
+              inventory_arrow = minetest.registered_entities[def.arrows].inventory_arrow_name
+           end
+
+           if not inventory_arrow then
+              return
+           end
+
+           local wielded_item = user:get_wielded_item()
+           local wielded_item_name = wielded_item:get_name()
+           local wielded_meta = wielded_item:get_meta()
+           local wielded_item_def = wielded_item:get_description()
+
+           local player_meta = user:get_meta()
+           local pname = user:get_player_name()
+
+           local current_time = os.time(os.date("!*t"))
+
+           if player_meta:contains("rcbows:charge_end") then
+              local player_charge_end = player_meta:get_int("rcbows:charge_end")
+              if current_time < player_charge_end then
+                 minetest.chat_send_player(pname, "You are already charging a weapon!")
+              else
+                 minetest.chat_send_player(pname, "You have already charged a weapon!")
+              end
+              return
+           end
+
+           if not inv:contains_item("main", inventory_arrow) then
+              minetest.chat_send_player(pname, "You have no suitable ammunition!")
+              return
+           end
+
+           local charge_time = def.charge_time
+
+           player_meta:set_int("rcbows:charge_end", math.floor(current_time + charge_time))
+           player_meta:set_int("rcbows:charge_max", charge_time)
+
+           rcbows.update_hud(user, charge_time)
+
+           if def.sounds then
+              local user_pos = user:get_pos()
+              if not def.sounds.soundfile_draw_bow then
+                 def.sounds.soundfile_draw_bow = "rcbows_draw_bow"
+                 rcbows.make_sound("pos", user_pos, def.sounds.soundfile_draw_bow, DEFAULT_GAIN, DEFAULT_MAX_HEAR_DISTANCE)
+              end
+           end
+
+           minetest.after(
+              charge_time,
+              function(user, name)
+                 local current_item = user:get_wielded_item()
+                 local current_meta = current_item:get_meta()
+                 if current_item:get_name() == name then
+                    inv:remove_item("main", inventory_arrow)
+                    current_meta:set_string("rcbows:charged_arrow", arrow) --save the arrow in the meta
+                    current_item:set_name(name .. "_charged")
+                    user:set_wielded_item(current_item)
+                    return itemstack
+                 end
+              end, user, name)
+        end
 
 	minetest.register_tool(name, {
 		description = def.description .. " ".. S("(place to reload)"),
@@ -165,7 +171,22 @@ function rcbows.register_bow(name, def)
 		inventory_image = def.base_texture .. "^" ..def.overlay_charged,
 		groups = {not_in_creative_inventory=1},
 
+                on_drop = function(itemstack, dropper, pos)
+                   local imeta = itemstack:get_meta()
+                   imeta:set_string("rcbows:charged_arrow", "")
+                   itemstack:set_name(name)
+
+                   local dmeta = dropper:get_meta()
+                   dmeta:set_string("rcbows:charge_end", "")
+
+                   return minetest.item_drop(itemstack, dropper, pos)
+                end,
+
 		on_use = function(itemstack, user, pointed_thing)
+
+                        local player_meta = user:get_meta()
+                        player_meta:set_string("rcbows:charge_end", "") -- clear the int
+
 			if not rcbows.spawn_arrow(user, def.strength, itemstack) then
 				return -- something failed
 			end
