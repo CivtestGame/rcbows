@@ -17,14 +17,22 @@ rcbows.registered_charged_items = {}
 
 function rcbows.spawn_arrow(user, strength, itemstack)
 	local pos = user:get_pos()
-	pos.y = pos.y + 1.5 -- camera offset
+	pos.y = pos.y + 1.25 -- camera offset
 	local dir = user:get_look_dir()
 	local yaw = user:get_look_horizontal()
 	local meta = itemstack:get_meta()
 	local arrow = meta:get_string("rcbows:charged_arrow")
 	local obj = nil
 	if pos and arrow then
-		obj = minetest.add_entity(pos, arrow)
+           local ndir = vector.normalize(pos)
+           local unit = 3
+           local o_x = ndir.x * math.cos(yaw - (math.pi/4)) * unit
+           local o_z = ndir.x * math.sin(yaw - (math.pi/4)) * unit
+
+           pos.x = pos.x - o_x
+           pos.z = pos.z - o_z
+
+           obj = minetest.add_entity(pos, arrow)
 	end
 	if not obj then
 		return
