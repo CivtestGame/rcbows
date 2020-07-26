@@ -25,7 +25,7 @@ function rcbows.spawn_arrow(user, strength, itemstack)
 	local obj = nil
 	if pos and arrow then
            local ndir = vector.normalize(pos)
-           local unit = 3
+           local unit = 0.5
            local o_x = ndir.x * math.cos(yaw - (math.pi/4)) * unit
            local o_z = ndir.x * math.sin(yaw - (math.pi/4)) * unit
 
