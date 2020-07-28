@@ -11,6 +11,41 @@ local DEFAULT_GAIN = 0.5
 local current_time = 0
 local storage = minetest.get_mod_storage()
 
+get_hud_timer = function()
+   return os.time(os.date("!*t"))
+end
+
+-- Dirty, dirty kludge to get some millisecond-resolution time for smoothing the
+-- rcbows reload-time hud indicator
+local ie = minetest.request_insecure_environment()
+if ie then
+   -- Why doesn't Minetest rebind `require` already?!!?! WTF
+   require = ie.require
+   local posix_exists, posix = pcall(ie.require, "posix")
+   if posix_exists then
+      -- We have the POSIX lib, so we can use POSIX ms-resolution functions.
+      get_hud_timer = function()
+         local s, ns = posix.clock_gettime(0)
+         local scaled = s + (ns / 1000000000)
+         return scaled
+      end
+   elseif package.config:sub(1,1) == '\\' then
+      -- We're on Windows. `os.clock` meets our requirements!
+      get_hud_timer = function()
+         return os.clock()
+      end
+   else
+      minetest.log("warning",
+                   "[rcbows] Insecure environment request accepted, but no "
+                      .. "suitable millisecond-resolution timer solution "
+                      .. "found. rcbows HUD graphic won't be smoothed.")
+   end
+else
+   minetest.log("warning",
+                "[rcbows] Insecure environment request denied. rcbows "
+                   .. "reload HUD graphic won't be smoothed.")
+end
+
 rcbows.registered_arrows = {}
 rcbows.registered_items = {}
 rcbows.registered_charged_items = {}
@@ -112,7 +147,7 @@ function rcbows.register_bow(name, def)
            local player_meta = user:get_meta()
            local pname = user:get_player_name()
 
-           local current_time = os.clock()--os.time(os.date("!*t"))
+           local current_time = get_hud_timer()
 
            if player_meta:contains("rcbows:charge_end") then
               local player_charge_end = player_meta:get_int("rcbows:charge_end")
@@ -472,7 +507,7 @@ minetest.register_globalstep(function(dtime)
     end
     timer = 0
 
-    current_time = os.clock()--os.time(os.date("!*t"))
+    current_time = get_hud_timer()
 end)
 
 -- Stop charged weapons from being moved from the hotbar
