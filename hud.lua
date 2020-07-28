@@ -30,11 +30,11 @@ function rcbows.update_hud(player)
 	if not bar_idx then
            local new_bar_idx = player:hud_add({
                  hud_elem_type = "image",
-                 position  = {x = 0.5, y = 0.55},
-                 offset    = {x = 0, y = 0},
+                 position  = {x = 0.5, y = 0.54},
+                 offset    = {x = -60, y = 0},
                  text      = "rcbows_hud_bar.png",
                  scale     = { x = percent, y = 1},
-                 alignment = { x = 0, y = 0 },
+                 alignment = { x = 1, y = 0 },
            })
            charge_hud_bar[pname] = new_bar_idx
 	else
@@ -45,7 +45,7 @@ end
 local timer = 0
 minetest.register_globalstep(function(dtime)
 		timer = timer + dtime
-		if timer < 0.5 then
+		if timer < 0.1 then
 			return
 		end
 		timer = 0

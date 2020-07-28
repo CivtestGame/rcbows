@@ -112,7 +112,7 @@ function rcbows.register_bow(name, def)
            local player_meta = user:get_meta()
            local pname = user:get_player_name()
 
-           local current_time = os.time(os.date("!*t"))
+           local current_time = os.clock()--os.time(os.date("!*t"))
 
            if player_meta:contains("rcbows:charge_end") then
               local player_charge_end = player_meta:get_int("rcbows:charge_end")
@@ -423,7 +423,7 @@ end
 function rcbows.trail(old_pos, pos, trail_particle)
     minetest.add_particlespawner({
         texture = trail_particle,
-        amount = 20,
+        amount = 10,
         time = 0.2,
         minpos = old_pos,
         maxpos = pos,
@@ -432,13 +432,13 @@ function rcbows.trail(old_pos, pos, trail_particle)
         --minacc = {x=1, y=0, z=1},
         --maxacc = {x=1, y=0, z=1},
         minexptime = 0.2,
-        maxexptime = 0.5,
+        maxexptime = 0.8,
         minsize = 0.1,
         maxsize = 1.0,
         collisiondetection = false,
         vertical = false,
         glow = 14,
-		animation = {type = "vertical_frames", aspect_w = 3, aspect_h = 3, length = 0.5}
+		animation = {type = "vertical_frames", aspect_w = 3, aspect_h = 3, length = 0.8}
     })
 end
 
@@ -467,12 +467,12 @@ end
 local timer = 0
 minetest.register_globalstep(function(dtime)
     timer = timer + dtime
-    if timer < 0.5 then
+    if timer < 0.1 then
         return
     end
     timer = 0
 
-    current_time = os.time(os.date("!*t"))
+    current_time = os.clock()--os.time(os.date("!*t"))
 end)
 
 -- Stop charged weapons from being moved from the hotbar
