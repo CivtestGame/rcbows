@@ -203,6 +203,7 @@ function rcbows.register_bow(name, def)
 		on_use = function() end,
 		on_place = reload_bow,
 		on_secondary_use = reload_bow,
+                groups = def.groups or {}
 	})
 
 	if def.recipe then
@@ -232,10 +233,13 @@ function rcbows.register_bow(name, def)
            return itemstack
         end
 
+        local charged_groups = table.copy(def.groups or {})
+        charged_groups.not_in_creative_inventory = 1
+
 	minetest.register_tool(name .. "_charged", {
 		description = def.description .. " " .. S("(use to fire)"),
 		inventory_image = def.base_texture .. "^" ..def.overlay_charged,
-		groups = {not_in_creative_inventory=1},
+		groups = charged_groups,
 
                 -- -- Unneeded
                 -- on_drop = function(itemstack, dropper, pos)
